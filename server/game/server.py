@@ -1,15 +1,13 @@
 import random
-from twisted.internet.protocol import ServerFactory, Protocol
-from twisted.protocols.basic import NetstringReceiver
 from twisted.python import log
+from twisted.protocols.basic import NetstringReceiver
+from twisted.internet.protocol import ServerFactory
+from twisted.application.service import Service
 
 class GameError(Exception):
     pass
 
 class GameProtocol(NetstringReceiver):
-
-    X = 'X'
-    O = 'O'
 
     def __init__(self):
         self.game_started = False
@@ -18,7 +16,8 @@ class GameProtocol(NetstringReceiver):
         self.current_player = None
 
     def connectionMade(self):
-        log.msg('Connection made')
+        peer = self.transport.getPeer()
+        log.msg('Connection made from {0}:{1}'.format(peer.host, peer.port))
 
     def stringReceived(self, line):
         """Decodes and runs a command from the received data"""
@@ -36,9 +35,10 @@ class GameProtocol(NetstringReceiver):
     def sendResponse(self, command, *args):
         string = ','.join([command] + [str(arg) for arg in args])
         self.sendString(string)
+        log.msg('Data sent: {0}'.format(string))
 
-    def connectionLost(self, reason=connectionDone):
-        log.msg('Connection lost')
+    #def connectionLost(self, reason=connectionDone):
+    #    log.msg('Connection lost')
 
     def runCommand(self, command, *args):
         """
@@ -76,8 +76,8 @@ class GameProtocol(NetstringReceiver):
             raise ValueError("X must be between 1 and 3")
         if y < 1 or 3 < y:
             raise ValueError("Y must be between 1 and 3")
-        if value not in (X, O):
-            raise ValueError('Cell value must be whether "{0}" or "{1}"'.format(X, O))
+        if value not in ('X', 'O'):
+            raise ValueError('Cell value must be whether "{0}" or "{1}"'.format('X', 'O'))
         if self.board[x - 1][y - 1] is not None:
             raise ValueError("Cell is not empty")
 
@@ -91,23 +91,30 @@ class GameProtocol(NetstringReceiver):
 
         self._setCell(x, y, self.current_player)
 
-        if self.current_player == X:
-            self.current_player = O
+        if self.current_player == 'X':
+            self.current_player = 'O'
         else:
-            self.current_player = X
+            self.current_player = 'X'
 
     def startGame(self, side=None):
         """Start a new game"""
 
         if side is None:
-            side = random.choice((X, O))
-        elif side.upper() not in (X, O):
+            side = random.choice(('X', 'O'))
+        elif side.upper() not in ('X', 'O'):
             raise ValueError('Invalid side: "{0}"', side)
 
         self._resetBoard()
         self.remote_player = side.upper()
-        self.current_player = X
+        self.current_player = 'X'
         self.game_started = True
 
 class GameFactory(ServerFactory):
+
     protocol = GameProtocol
+
+    def __init__(self, service):
+        self.service = service
+
+class GameService(Service):
+    pass
