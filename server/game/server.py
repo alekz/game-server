@@ -63,19 +63,19 @@ class GameProtocol(NetstringReceiver):
             return
         try:
             commands[command](*args)
-        except (ValueError, GameError), e:
+        except (ValueError, TypeError, GameError), e:
             self.sendError('Error executing command "{0}": {1}'.format(command, e))
 
     def _resetBoard(self):
-        row = (None,) * 3
-        self.board = (row[:], row[:], row[:])
+        row = [None] * 3
+        self.board = [row[:], row[:], row[:]]
 
     def _setCell(self, x, y, value):
-
-        if x < 1 or 3 < x:
-            raise ValueError("X must be between 1 and 3")
-        if y < 1 or 3 < y:
-            raise ValueError("Y must be between 1 and 3")
+        x, y = int(x), int(y)
+        if (x < 1) or (3 < x):
+            raise ValueError("X must be between 1 and 3, got {0} instead".format(x))
+        if (y < 1) or (3 < y):
+            raise ValueError("Y must be between 1 and 3, got {0} instead".format(y))
         if value not in ('X', 'O'):
             raise ValueError('Cell value must be whether "{0}" or "{1}"'.format('X', 'O'))
         if self.board[x - 1][y - 1] is not None:
