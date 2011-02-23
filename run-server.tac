@@ -1,5 +1,5 @@
 from twisted.application import internet, service
-from game.server import GameProtocol, GameFactory, GameService
+from gameserver.network.server import GameProtocol, GameFactory, GameService
 
 port = 20000
 interface = 'localhost'
