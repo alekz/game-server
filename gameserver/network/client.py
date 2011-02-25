@@ -3,7 +3,7 @@ import optparse
 from twisted.protocols import basic
 from twisted.internet import protocol, stdio
 from gameserver.network.protocol import JsonReceiver
-from gameserver.game import Game, GameError
+from gameserver.game import Game
 
 class UserInputProtocol(basic.LineReceiver):
 
@@ -22,6 +22,8 @@ class GameClientProtocol(JsonReceiver):
 
     def connectionMade(self):
         stdio.StandardIO(UserInputProtocol(self.userInputReceived))
+        self.printHelp()
+        self.printBoard()
 
     def userInputReceived(self, string):
         """
@@ -31,11 +33,23 @@ class GameClientProtocol(JsonReceiver):
         """
         commands = {
                     'start': self.sendStartGame,
+                    '?': self.printHelp,
+                    'h': self.printHelp,
+                    'help': self.printHelp,
+                    'p': self.printBoard,
+                    'print': self.printBoard,
+                    'm': self.sendMakeMove,
                     'move': self.sendMakeMove,
+                    'q': self.exitGame,
+                    'quit': self.exitGame,
+                    'exit': self.exitGame,
                     }
 
-        params = string.split(' ')
+        params = filter(len, string.split(' '))
         command, params = params[0], params[1:]
+
+        if not command:
+            return
 
         if command not in commands:
             print "Invalid command"
@@ -46,14 +60,28 @@ class GameClientProtocol(JsonReceiver):
         except TypeError, e:
             print "Invalid command parameters: {0}".format(e)
 
+    def printHelp(self):
+        print "Available commands:"
+        print "  ?, h, help          - Print list of commands"
+        print "  p, print            - Print the board"
+        print "  m, move <row> <col> - Make a move to a cell located in given row/column"
+        print "                        \"row\" and \"col\" should be values between 1 and 3"
+        print "  q, quit, exit       - Exit the program"
+        print
+
+    def exitGame(self):
+        print "Bye"
+        from twisted.internet import reactor
+        reactor.stop()  #@UndefinedVariable
+
     def sendCommand(self, command, **params):
         self.sendObject(command=command, params=params)
 
     def sendStartGame(self):
         self.sendCommand('start')
 
-    def sendMakeMove(self, x, y):
-        self.sendCommand('move', x=x, y=y)
+    def sendMakeMove(self, row, col):
+        self.sendCommand('move', x=col, y=row)
 
     def objectReceived(self, obj):
         print "Data received: {0}".format(obj)
@@ -88,11 +116,15 @@ class GameClientProtocol(JsonReceiver):
     def printBoard(self):
         board = [[cell or ' ' for cell in col] for col in self.game.board]
         lines = [
-                 " {0[0]} | {1[0]} | {2[0]} ",
-                 "---+---+---",
-                 " {0[1]} | {1[1]} | {2[1]} ",
-                 "---+---+---",
-                 " {0[2]} | {1[2]} | {2[2]} ",
+                 "     1   2   3",
+                 "   +---+---+---+",
+                 " 1 | {0[0]} | {1[0]} | {2[0]} |",
+                 "   +---+---+---+",
+                 " 2 | {0[1]} | {1[1]} | {2[1]} |",
+                 "   +---+---+---+",
+                 " 3 | {0[2]} | {1[2]} | {2[2]} |",
+                 "   +---+---+---+",
+                 "",
                  ]
         print "\n".join(lines).format(*board)
 
