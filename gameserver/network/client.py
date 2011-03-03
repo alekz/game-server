@@ -90,6 +90,9 @@ class GameClientProtocol(JsonReceiver):
             params = obj.get('params', {})
             self.receiveCommand(command, **params)
 
+    def invalidJsonReceived(self, data):
+        print "Invalid JSON data received: {0}".format(data)
+
     def receiveCommand(self, command, **params):
 
         commands = {
