@@ -1,9 +1,9 @@
 import simplejson as json
-from twisted.internet import protocol
+from twisted.protocols import basic
 
-class JsonReceiver(protocol.Protocol):
+class JsonReceiver(basic.LineOnlyReceiver):
 
-    def dataReceived(self, data):
+    def lineReceived(self, data):
         try:
             decoded_data = json.loads(data)
         except json.decoder.JSONDecodeError:
@@ -23,4 +23,4 @@ class JsonReceiver(protocol.Protocol):
             dict.update(obj)
         if kwargs is not None:
             dict.update(kwargs)
-        self.transport.write(json.dumps(dict))
+        self.sendLine(json.dumps(dict))
