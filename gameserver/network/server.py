@@ -27,6 +27,10 @@ class GameProtocol(JsonReceiver):
 
         self.runCommand(command, **params)
 
+    def invalidJsonReceived(self, data):
+        log.msg('Invalid JSON data received:\n' + data)
+        self.sendError('Invalid JSON data')
+
     def sendError(self, message):
         self.sendResponse('error', message=message)
 

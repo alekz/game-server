@@ -4,10 +4,18 @@ from twisted.internet import protocol
 class JsonReceiver(protocol.Protocol):
 
     def dataReceived(self, data):
-        self.objectReceived(json.loads(data))
+        try:
+            decoded_data = json.loads(data)
+        except json.decoder.JSONDecodeError:
+            self.invalidJsonReceived(data)
+        else:
+            self.objectReceived(decoded_data)
 
     def objectReceived(self, obj):
         raise NotImplementedError
+
+    def invalidJsonReceived(self, data):
+        pass
 
     def sendObject(self, obj=None, **kwargs):
         dict = {}
