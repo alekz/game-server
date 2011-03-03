@@ -49,3 +49,18 @@ class Game(object):
     def getBoard(self):
         return self._board
     board = property(getBoard)
+
+class GameStrategy(object):
+    def getMove(self, board):
+        raise NotImplementedError
+
+class RandomGameStrategy(GameStrategy):
+    def getMove(self, board):
+        import random
+        free_cells = [(x + 1, y + 1) for x, row in enumerate(board)
+                             for y, cell in enumerate(row)
+                             if cell is None]
+        if free_cells:
+            return random.choice(free_cells)
+        else:
+            return None

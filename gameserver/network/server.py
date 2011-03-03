@@ -2,12 +2,13 @@ from twisted.python import log
 from twisted.internet import protocol
 from twisted.application import service
 from gameserver.network.protocol import JsonReceiver
-from gameserver.game import Game, GameError
+from gameserver.game import Game, GameError, RandomGameStrategy
 
 class GameProtocol(JsonReceiver):
 
     def __init__(self):
         self.game = Game()
+        self.strategy = RandomGameStrategy()
 
     def connectionMade(self):
         peer = self.transport.getPeer()
@@ -73,6 +74,12 @@ class GameProtocol(JsonReceiver):
     def makeMove(self, x, y):
         self.game.makeMove(x, y)
         self.sendResponse('move', x=x, y=y)
+
+        response_move = self.strategy.getMove(self.game.board)
+        if response_move:
+            x1, y1 = response_move
+            self.game.makeMove(x1, y1)
+            self.sendResponse('move', x=x1, y=y1)
 
 
 class GameFactory(protocol.ServerFactory):
