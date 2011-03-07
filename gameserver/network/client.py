@@ -22,6 +22,7 @@ class GameClientProtocol(JsonReceiver):
 
     def connectionMade(self):
         stdio.StandardIO(UserInputProtocol(self.userInputReceived))
+        print "Connected!\n"
         self.printHelp()
         self.printBoard()
 
@@ -70,9 +71,8 @@ class GameClientProtocol(JsonReceiver):
         print
 
     def exitGame(self):
-        print "Bye"
-        from twisted.internet import reactor
-        reactor.stop()  #@UndefinedVariable
+        print "Disconnecting..."
+        self.transport.loseConnection()
 
     def sendCommand(self, command, **params):
         self.sendObject(command=command, params=params)
@@ -134,18 +134,34 @@ class GameClientProtocol(JsonReceiver):
 class GameClientFactory(protocol.ClientFactory):
     protocol = GameClientProtocol
 
+    def startedConnecting(self, connector):
+        destination = connector.getDestination()
+        print "Connecting to server {0}:{1}, please wait...".format(destination.host, destination.port)
+
+    def clientConnectionFailed(self, connector, reason):
+        print reason.getErrorMessage()
+        from twisted.internet import reactor
+        reactor.stop()  #@UndefinedVariable
+
+    def clientConnectionLost(self, connector, reason):
+        print reason.getErrorMessage()
+        from twisted.internet import reactor, error
+        try:
+            reactor.stop()  #@UndefinedVariable
+        except error.ReactorNotRunning:
+            pass
+
 def parse_args():
-    usage = "usage: %prog [options] [hostname]:port"
+    usage = "usage: %prog [options] [[hostname:]port]"
 
     parser = optparse.OptionParser(usage)
 
     _, args = parser.parse_args()
 
     if not args:
-        print parser.format_help()
-        parser.exit()
-
-    address = args[0]
+        address = "127.0.0.1:20000"
+    else:
+        address = args[0]
 
     if ':' not in address:
         host, port = '127.0.0.1', address
@@ -153,7 +169,7 @@ def parse_args():
         host, port = address.split(':', 1)
 
     if not port.isdigit():
-        parser.error('Ports must be integers.')
+        parser.error("Ports must be integers.")
 
     return host, int(port)
 
