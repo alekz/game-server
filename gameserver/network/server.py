@@ -20,9 +20,15 @@ class GameProtocol(JsonReceiver):
     def connectionMade(self):
         peer = self.transport.getPeer()
         log.msg("Connection made from {0}:{1}".format(peer.host, peer.port))
+        self.sendResponse('awaiting_opponent')
 
         # Find an opponent or add self to a queue
         self.factory.findOpponent(self)
+
+    def connectionLost(self, reason):
+        peer = self.transport.getPeer()
+        log.msg("Connection lost from {0}:{1}".format(peer.host, peer.port))
+        self.factory.playerDisconnected(self)
 
     def objectReceived(self, data):
         """Decodes and runs a command from the received data"""
@@ -120,6 +126,12 @@ class GameFactory(protocol.ServerFactory):
             opponent.startGame(game, player, 'O')
         else:
             self.queue.append(player)
+
+    def playerDisconnected(self, player):
+        try:
+            self.queue.remove(player)
+        except ValueError:
+            pass
 
 class GameService(service.Service):
     pass

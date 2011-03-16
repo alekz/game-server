@@ -53,6 +53,10 @@ class Game(object):
         return self._board
     board = property(getBoard)
 
+    def getCurrentPlayer(self):
+        return self._current_player
+    current_player = property(getCurrentPlayer)
+
 class GameStrategy(object):
 
     def getMove(self, game):

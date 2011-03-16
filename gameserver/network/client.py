@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import optparse
+import re
+from functools import partial
 from twisted.protocols import basic
 from twisted.internet import protocol, stdio
 from gameserver.network.protocol import JsonReceiver
@@ -19,10 +21,20 @@ class GameClientProtocol(JsonReceiver):
 
     def __init__(self):
         self.game = Game()
+        self.side = None
+        self.debug_enabled = False
+
+    def out(self, *messages):
+        for message in messages:
+            print message
+
+    def debug(self, *messages):
+        if self.debug_enabled:
+            self.out(*messages)
 
     def connectionMade(self):
         stdio.StandardIO(UserInputProtocol(self.userInputReceived))
-        print "Connected!\n"
+        self.out("Connected!")
         self.printHelp()
         self.printBoard()
 
@@ -46,32 +58,41 @@ class GameClientProtocol(JsonReceiver):
                     'exit': self.exitGame,
                     }
 
-        params = filter(len, string.split(' '))
-        command, params = params[0], params[1:]
+        # Shorthand for "move" command
+        match = re.match('^\s*([123])\s*([123])\s*$', string)
+        if match:
+            command = 'move'
+            params = match.groups()
+        else:
+            params = filter(len, string.split(' '))
+            command, params = params[0], params[1:]
 
         if not command:
             return
 
         if command not in commands:
-            print "Invalid command"
+            self.out("Invalid command")
             return
 
         try:
             commands[command](*params)
         except TypeError, e:
-            print "Invalid command parameters: {0}".format(e)
+            self.out("Invalid command parameters: {0}".format(e))
 
     def printHelp(self):
-        print "Available commands:"
-        print "  ?, h, help          - Print list of commands"
-        print "  p, print            - Print the board"
-        print "  m, move <row> <col> - Make a move to a cell located in given row/column"
-        print "                        \"row\" and \"col\" should be values between 1 and 3"
-        print "  q, quit, exit       - Exit the program"
-        print
+        self.out(
+            "",
+            "Available commands:",
+            "  ?, h, help          - Print list of commands",
+            "  p, print            - Print the board",
+            "  m, move <row> <col> - Make a move to a cell located in given row/column",
+            "                        \"row\" and \"col\" should be values between 1 and 3",
+            "                        Shorthand for this command: \"<row><col>\", e.g. \"13\"",
+            "  q, quit, exit       - Exit the program",
+            "")
 
     def exitGame(self):
-        print "Disconnecting..."
+        self.out("Disconnecting...")
         self.transport.loseConnection()
 
     def sendCommand(self, command, **params):
@@ -84,41 +105,54 @@ class GameClientProtocol(JsonReceiver):
         self.sendCommand('move', x=col, y=row)
 
     def objectReceived(self, obj):
-        print "Data received: {0}".format(obj)
+        self.debug("Data received: {0}".format(obj))
         if obj.has_key('command'):
             command = obj['command']
             params = obj.get('params', {})
             self.receiveCommand(command, **params)
 
     def invalidJsonReceived(self, data):
-        print "Invalid JSON data received: {0}".format(data)
+        self.debug("Invalid JSON data received: {0}".format(data))
 
     def receiveCommand(self, command, **params):
 
         commands = {
-                    'error': self.serverError,
-                    'move': self.serverMove,
-                    'started': self.serverStarted,
-                    }
+            'error': self.serverError,
+            'move': self.serverMove,
+            'awaiting_opponent': partial(self.serverMessage, "Please wait for another player"),
+            'started': self.serverStarted,
+            }
 
         if command not in commands:
-            print "Invalid command received: {0}".format(command)
+            self.debug("Invalid command received: {0}".format(command))
             return
 
         try:
             commands[command](**params)
         except TypeError, e:
-            print "Invalid command parameters received: {0}".format(e)
+            self.debug("Invalid command parameters received: {0}".format(e))
 
     def serverError(self, message):
-        print "Server error: {0}".format(message)
+        self.out("Server error: {0}".format(message))
+
+    def serverMessage(self, message):
+        self.out(message)
 
     def serverMove(self, x, y):
         self.game.makeMove(x, y)
         self.printBoard()
+        self.printNextTurnMessage()
 
     def serverStarted(self, side):
-        print "Game started, you're playing with {0}".format(side)
+        self.side = side
+        self.out("Game started, you're playing with {0}".format(side))
+        self.printNextTurnMessage()
+
+    def printNextTurnMessage(self):
+        if self.game.current_player == self.side:
+            self.out("It's your turn now")
+        else:
+            self.out("It's your opponent's turn now")
 
     def printBoard(self):
         board = [[cell or ' ' for cell in col] for col in self.game.board]
@@ -133,7 +167,7 @@ class GameClientProtocol(JsonReceiver):
                  "   +---+---+---+",
                  "",
                  ]
-        print "\n".join(lines).format(*board)
+        self.out("\n".join(lines).format(*board))
 
 class GameClientFactory(protocol.ClientFactory):
     protocol = GameClientProtocol
