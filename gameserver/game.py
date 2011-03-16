@@ -46,18 +46,29 @@ class Game(object):
         self._current_player = 'X'
         self._game_started = True
 
+    def isFinished(self):
+        return False  # TODO: Implement Game.isFinished()
+
     def getBoard(self):
         return self._board
     board = property(getBoard)
 
 class GameStrategy(object):
-    def getMove(self, board):
+
+    def getMove(self, game):
         raise NotImplementedError
 
+    def makeMove(self, game):
+        cell = self.getMove(game)
+        if cell:
+            game.makeMove(*cell)
+        return cell
+
 class RandomGameStrategy(GameStrategy):
-    def getMove(self, board):
+
+    def getMove(self, game):
         import random
-        free_cells = [(x + 1, y + 1) for x, row in enumerate(board)
+        free_cells = [(x + 1, y + 1) for x, row in enumerate(game.board)
                              for y, cell in enumerate(row)
                              if cell is None]
         if free_cells:

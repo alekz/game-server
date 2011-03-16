@@ -98,6 +98,7 @@ class GameClientProtocol(JsonReceiver):
         commands = {
                     'error': self.serverError,
                     'move': self.serverMove,
+                    'started': self.serverStarted,
                     }
 
         if command not in commands:
@@ -115,6 +116,9 @@ class GameClientProtocol(JsonReceiver):
     def serverMove(self, x, y):
         self.game.makeMove(x, y)
         self.printBoard()
+
+    def serverStarted(self, side):
+        print "Game started, you're playing with {0}".format(side)
 
     def printBoard(self):
         board = [[cell or ' ' for cell in col] for col in self.game.board]
