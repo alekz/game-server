@@ -104,7 +104,7 @@ class GameProtocol(JsonReceiver):
             raise Exception("Opponent sent us a move but we weren't expecting that")
 
     def _moveMade(self, x, y, new_state):
-            self.sendResponse('move', x=x, y=y)
+            self.sendResponse('move', x=x, y=y, winner=self.game.getWinner())
             if self.game.isFinished():
                 self.state = GameProtocol.STATE_FINISHED
             else:

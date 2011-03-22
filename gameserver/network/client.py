@@ -138,10 +138,17 @@ class GameClientProtocol(JsonReceiver):
     def serverMessage(self, message):
         self.out(message)
 
-    def serverMove(self, x, y):
+    def serverMove(self, x, y, winner=None):
         self.game.makeMove(x, y)
         self.printBoard()
-        self.printNextTurnMessage()
+        if winner is None:
+            self.printNextTurnMessage()
+        else:
+            if winner == self.side:
+                self.out("You won, congratulations!")
+            else:
+                self.out("You've lost...")
+            self.exitGame()
 
     def serverStarted(self, side):
         self.side = side

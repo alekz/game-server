@@ -15,16 +15,24 @@ class Game(object):
 
     def _setCell(self, x, y, value):
         x, y = int(x), int(y)
-        if (x < 1) or (3 < x):
-            raise ValueError("X must be between 1 and 3, got {0} instead".format(x))
-        if (y < 1) or (3 < y):
-            raise ValueError("Y must be between 1 and 3, got {0} instead".format(y))
+        self._checkCoords(x, y)
         if value not in ('X', 'O'):
             raise ValueError('Cell value must be whether "{0}" or "{1}"'.format('X', 'O'))
         if self._board[x - 1][y - 1] is not None:
             raise ValueError("Cell is not empty")
 
         self._board[x - 1][y - 1] = value
+
+    def _getCell(self, x, y):
+        x, y = int(x), int(y)
+        self._checkCoords(x, y)
+        return self._board[x - 1][y - 1]
+
+    def _checkCoords(self, x, y):
+        if (x < 1) or (3 < x):
+            raise ValueError("X must be between 1 and 3, got {0} instead".format(x))
+        if (y < 1) or (3 < y):
+            raise ValueError("Y must be between 1 and 3, got {0} instead".format(y))
 
     def makeMove(self, x, y):
         """Make the move and switch to the next player."""
@@ -46,8 +54,28 @@ class Game(object):
         self._current_player = 'X'
         self._game_started = True
 
+    def getWinner(self):
+
+        lines = []
+
+        # Rows and cols
+        for i in (1, 2, 3):
+            lines.append([self._getCell(x, i) for x in (1, 2, 3)])
+            lines.append([self._getCell(i, y) for y in (1, 2, 3)])
+
+        # Diagonals
+        lines.append([self._getCell(i, i) for i in (1, 2, 3)])
+        lines.append([self._getCell(4 - i, i) for i in (1, 2, 3)])
+
+        # Check each line
+        for line in lines:
+            if (line[0] == line[1] == line[2]) and (line[0] is not None):
+                return line[0]
+
+        return None
+
     def isFinished(self):
-        return False  # TODO: Implement Game.isFinished()
+        return self.getWinner() is not None
 
     def getBoard(self):
         return self._board
