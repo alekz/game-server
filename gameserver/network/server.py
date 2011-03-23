@@ -30,6 +30,12 @@ class GameProtocol(JsonReceiver):
         peer = self.transport.getPeer()
         log.msg("Connection lost from {0}:{1}".format(peer.host, peer.port))
         self.factory.playerDisconnected(self)
+        if self.state != GameProtocol.STATE_FINISHED and self.opponent is not None:
+            self.opponent.opponentConnectionLost(reason)
+
+    def opponentConnectionLost(self, reason):
+        self.sendResponse('opponent_disconnected')
+
 
     def objectReceived(self, data):
         """Decodes and runs a command from the received data"""

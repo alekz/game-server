@@ -120,6 +120,7 @@ class GameClientProtocol(JsonReceiver):
             'error': self.serverError,
             'move': self.serverMove,
             'awaiting_opponent': partial(self.serverMessage, "Please wait for another player"),
+            'opponent_disconnected': self.serverOpponentDisconnected,
             'started': self.serverStarted,
             }
 
@@ -154,6 +155,10 @@ class GameClientProtocol(JsonReceiver):
         self.side = side
         self.out("Game started, you're playing with {0}".format(side))
         self.printNextTurnMessage()
+
+    def serverOpponentDisconnected(self):
+        self.out("Your opponent has disconnected, game is over")
+        self.exitGame()
 
     def printNextTurnMessage(self):
         if self.game.current_player == self.side:
