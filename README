@@ -1,0 +1,9 @@
+It is a very simple game server and a command-line client for Tic-Tac-Toe game written in Twisted, for education purposes. It allows two players to connect a server and play versus each other.
+
+I chose Tic-Tac-Toe because it is the simplest game I could think of; the goal is to learn network programming in Twisted.
+
+Usage:
+"./run-server" to run the server using the default port (20000)
+"./run-client" to run the client using the default port (20000)
+
+You need to connect two clients to the server in order to start the game.
