@@ -1,3 +1,4 @@
+import random
 from collections import deque
 from twisted.python import log
 from twisted.internet import protocol
@@ -119,13 +120,15 @@ class GameFactory(protocol.ServerFactory):
         self.service = service
 
     def findOpponent(self, player):
-        if self.queue:
+        try:
             opponent = self.queue.popleft()
-            game = Game()
-            player.startGame(game, opponent, 'X')
-            opponent.startGame(game, player, 'O')
-        else:
+        except IndexError:
             self.queue.append(player)
+        else:
+            game = Game()
+            side1, side2 = random.choice([('O', 'X'), ('X', 'O')])
+            player.startGame(game, opponent, side1)
+            opponent.startGame(game, player, side2)
 
     def playerDisconnected(self, player):
         try:
