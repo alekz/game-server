@@ -1,4 +1,4 @@
-It is a very simple game server and a command-line client for Tic-Tac-Toe game written in Twisted, for education purposes. It allows two players to connect a server and play versus each other.
+It is a very simple game server and a command-line client for Tic-Tac-Toe game written in Twisted, for education purposes. It allows two players to connect to a server and play with each other.
 
 I chose Tic-Tac-Toe because it is the simplest game I could think of; the goal is to learn network programming in Twisted.
 
